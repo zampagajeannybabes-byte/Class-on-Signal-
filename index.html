@@ -16,6 +16,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
 
   <style>
@@ -403,7 +404,10 @@ body.text-only .file-card{display:none}
 // FIREBASE CONFIG & INIT
 // ══════════════════════════════════════════
 var db = null, auth = null, storage = null, demoMode = false;
-
+var SUPA_URL = 'https://lkrgrwbzlbbszlcbxymp.supabase.co';
+var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxrcmdyd2J6bGJic3psY2J4eW1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxNDcwNjgsImV4cCI6MjA5NTcyMzA2OH0.4NAWYXlSSzkYRzO-_NIOlYHQVgxSslmNVEEnKxdWcM4';
+var supa = null;
+  
 function loadFirebaseConfig() {
   // Hardcoded Firebase config
   var cfg = {
@@ -426,6 +430,7 @@ function initFirebase(cfg) {
     db = firebase.firestore();
     auth = firebase.auth();
     storage = firebase.storage();
+    supa = supabase.createClient(SUPA_URL, SUPA_KEY);
     // Enable offline persistence
     db.enablePersistence().catch(function(){});
     console.log('Firebase connected');
@@ -1015,39 +1020,36 @@ function submitPost() {
   }
 
   var promise;
-  if (selFile && compDataURL && getType(selFile.name) === 'img') {
-    // Upload image to Firebase Storage
-    var up = document.getElementById('upload-progress');
-    var fill = document.getElementById('upload-fill');
-    var status = document.getElementById('upload-status');
-    up.style.display = 'block';
-
-    var ref = storage.ref('posts/' + state.classCode + '/' + Date.now() + '_' + selFile.name);
-    var task = ref.putString(compDataURL, 'data_url');
-
-    task.on('state_changed',
-      function(snap) {
-        var pct = Math.round(snap.bytesTransferred / snap.totalBytes * 100);
-        fill.style.width = pct + '%';
-        status.textContent = 'Uploading… ' + pct + '%';
-      },
-      function(err) {
-        // Upload failed — post without file URL
-        up.style.display = 'none';
-        savePostToFirestore(postData, btn);
-      },
-      function() {
-        task.snapshot.ref.getDownloadURL().then(function(url) {
-          postData.file.url = url;
-          up.style.display = 'none';
-          savePostToFirestore(postData, btn);
-        });
+  if (selFile && compDataURL) {
+  var up = document.getElementById('upload-progress');
+  var fill = document.getElementById('upload-fill');
+  var status = document.getElementById('upload-status');
+  up.style.display = 'block';
+  fill.style.width = '30%';
+  status.textContent = 'Uploading…';
+  var fileName = state.classCode + '/' + Date.now() + '_' + selFile.name;
+  var base64 = compDataURL.split(',')[1];
+  var byteChars = atob(base64);
+  var byteArr = new Uint8Array(byteChars.length);
+  for (var i = 0; i < byteChars.length; i++) byteArr[i] = byteChars.charCodeAt(i);
+  var blob = new Blob([byteArr], { type: selFile.type || 'application/octet-stream' });
+  fill.style.width = '60%';
+  supa.storage.from('files').upload(fileName, blob, { upsert: true })
+    .then(function(res) {
+      if (res.error) throw res.error;
+      var urlRes = supa.storage.from('files').getPublicUrl(fileName);
+      postData.file.url = urlRes.data.publicUrl;
+      fill.style.width = '100%';
+      up.style.display = 'none';
+      savePostToFirestore(postData, btn);
+    }).catch(function(err) {
+      up.style.display = 'none';
+      savePostToFirestore(postData, btn);
+    });
+} else {
+  savePostToFirestore(postData, btn);
       }
-    );
-  } else {
-    savePostToFirestore(postData, btn);
-  }
-}
+   
 
 function savePostToFirestore(postData, btn) {
   db.collection('posts').add(postData).then(function() {
