@@ -131,7 +131,7 @@ body.text-only .file-card{display:none}
 .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 0 12px;cursor:pointer;font-size:10px;font-weight:600;color:var(--text2);gap:3px}
 .nav-item .ni{font-size:20px}
 .nav-item.active{color:var(--accent2)}
-.fab{position:fixed;bottom:72px;right:16px;width:52px;height:52px;background:var(--accent);border:none;border-radius:50%;color:#fff;font-size:26px;cursor:pointer;box-shadow:0 4px 20px rgba(37,99,235,0.4);display:flex;align-items:center;justify-content:center;z-index:15}
+.fab{position:fixed;bottom:80px;right:16px;width:48px;height:48px;background:var(--accent);border:none;border-radius:50%;color:#fff;font-size:22px;cursor:pointer;box-shadow:0 4px 20px rgba(37,99,235,0.4);display:flex;align-items:center;justify-content:center;z-index:15}
 
 /* ── POST SCREEN ── */
 #screen-post{background:var(--bg);padding-bottom:80px}
@@ -198,7 +198,7 @@ body.text-only .file-card{display:none}
 <body>
 
 <!-- ══ FIREBASE SETUP SCREEN ══ -->
-<div id="screen-setup" class="screen active">
+<div id="screen-setup" class="screen">
   <div class="setup-box">
     <span style="font-size:40px;display:block;margin-bottom:12px;">⚙️</span>
     <h2>Firebase Setup Required</h2>
@@ -247,14 +247,27 @@ body.text-only .file-card{display:none}
   <div class="modal-sheet">
     <h3>👩‍🏫 Teacher Sign In</h3>
     <input type="email" id="teacher-email" placeholder="your@email.com" inputmode="email">
-    <input type="password" id="teacher-pass" placeholder="Password">
+    <input type="password" id="teacher-pass" placeholder="Password (min 6 characters)">
     <div style="font-size:12px;color:var(--text2);margin-bottom:10px;">
-      New teacher? <span style="color:var(--accent2);cursor:pointer;" onclick="registerTeacher()">Create account</span>
+      New teacher? <span style="color:var(--accent2);cursor:pointer;" onclick="registerTeacher()">Create account →</span>
     </div>
     <div class="modal-btns">
       <button class="btn-sm ghost" onclick="closeTeacherModal()">Cancel</button>
       <button class="btn-sm primary" onclick="handleTeacherLogin()">Sign In</button>
     </div>
+  </div>
+</div>
+
+<!-- ══ CLASS CODE MODAL (shown to teacher after login) ══ -->
+<div class="modal-overlay" id="classcode-modal">
+  <div class="modal-sheet">
+    <h3>🎉 Your Class Code</h3>
+    <div style="text-align:center;margin:16px 0;">
+      <div id="display-class-code" style="font-size:42px;font-weight:700;letter-spacing:8px;color:var(--accent2);font-family:var(--mono);background:var(--bg3);border-radius:16px;padding:20px;">------</div>
+      <div style="font-size:13px;color:var(--text2);margin-top:10px;">Share this code with your students</div>
+    </div>
+    <button onclick="copyClassCode()" style="width:100%;height:44px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--accent2);font-family:var(--font);font-size:14px;font-weight:700;cursor:pointer;margin-bottom:10px;">📋 Copy Code</button>
+    <button class="btn-sm primary" onclick="closeClassCodeModal()" style="width:100%;height:44px;">✅ Enter Class</button>
   </div>
 </div>
 
@@ -355,7 +368,7 @@ body.text-only .file-card{display:none}
     <div class="si-left"><span class="si-icon">📵</span><div>Offline cache<div class="si-sub">Feeds cached for offline reading</div></div></div>
     <span style="color:var(--green);font-size:12px;font-weight:700;">READY</span>
   </div>
-  <div class="settings-item" onclick="showSetup()">
+  <div class="settings-item" style="display:none;" onclick="showSetup()">
     <div class="si-left"><span class="si-icon">🔥</span><div>Firebase config<div class="si-sub" id="fb-status-lbl">Connected</div></div></div>
     <span style="color:var(--text2);font-size:13px;">Edit ›</span>
   </div>
@@ -392,15 +405,17 @@ body.text-only .file-card{display:none}
 var db = null, auth = null, storage = null, demoMode = false;
 
 function loadFirebaseConfig() {
-  var saved = localStorage.getItem('cos_fb_config');
-  if (saved) {
-    try {
-      var cfg = JSON.parse(saved);
-      initFirebase(cfg);
-      return true;
-    } catch(e) {}
-  }
-  return false;
+  // Hardcoded Firebase config
+  var cfg = {
+    apiKey: "AIzaSyDeQlycwTrphtYlo_o-065ZnapCY7HDkHk",
+    authDomain: "classonsignal-8846a.firebaseapp.com",
+    projectId: "classonsignal-8846a",
+    storageBucket: "classonsignal-8846a.firebasestorage.app",
+    messagingSenderId: "1068755204530",
+    appId: "1:1068755204530:web:400807a484397e78a68cab"
+  };
+  initFirebase(cfg);
+  return true;
 }
 
 function initFirebase(cfg) {
@@ -494,16 +509,10 @@ window.addEventListener('DOMContentLoaded', function() {
   var savedName = localStorage.getItem('cos_name');
   var savedUid  = localStorage.getItem('cos_uid');
 
-  // Try to init Firebase
+  // Always load hardcoded Firebase config
   var hasFirebase = loadFirebaseConfig();
   var isDemo = localStorage.getItem('cos_demo') === '1';
-
-  if (!hasFirebase && !isDemo) {
-    showScreen('setup');
-    return;
-  }
-
-  demoMode = isDemo && !hasFirebase;
+  demoMode = false; // Firebase always available
 
   if (savedCode && savedRole) {
     state.classCode = savedCode;
@@ -534,13 +543,24 @@ window.addEventListener('DOMContentLoaded', function() {
 // SCREEN NAV
 // ══════════════════════════════════════════
 function showScreen(name) {
-  document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
+  // Hide ALL screens completely
+  document.querySelectorAll('.screen').forEach(function(s) {
+    s.classList.remove('active');
+    s.style.display = 'none';
+  });
+  // Show only the target screen
   var el = document.getElementById('screen-' + name);
-  if (el) el.classList.add('active');
-  ['feed','post','profile'].forEach(function(n, i) {
+  if (el) {
+    el.style.display = 'flex';
+    el.classList.add('active');
+  }
+  // Update nav
+  ['feed','post','profile'].forEach(function(n) {
     var nav = document.getElementById('nav-' + n);
     if (nav) nav.classList.toggle('active', n === name);
   });
+  // Scroll to top
+  window.scrollTo(0, 0);
   if (name === 'feed' && state.classCode) renderFeed();
 }
 
@@ -606,7 +626,7 @@ function handleTeacherLogin() {
     state.uid = 'teacher_demo';
     saveSession();
     closeTeacherModal();
-    enterFeed();
+    showClassCodeModal();
     showToast('🎭 Demo mode — Class code: ' + code);
     return;
   }
@@ -650,20 +670,51 @@ function registerTeacher() {
     state.role = 'teacher';
     state.displayName = 'Teacher';
     state.classCode = Math.floor(100000 + Math.random() * 900000).toString();
-    // Save to Firestore
     return Promise.all([
-      db.collection('teachers').doc(state.uid).set({ classCode: state.classCode, email: email, createdAt: firebase.firestore.FieldValue.serverTimestamp() }),
-      db.collection('classes').doc(state.classCode).set({ teacherUid: state.uid, createdAt: firebase.firestore.FieldValue.serverTimestamp() })
+      db.collection('teachers').doc(state.uid).set({
+        classCode: state.classCode,
+        email: email,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      }),
+      db.collection('classes').doc(state.classCode).set({
+        teacherUid: state.uid,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      })
     ]);
   }).then(function() {
     saveSession();
     closeTeacherModal();
-    enterFeed();
-    showToast('🎉 Account created! Your class code: ' + state.classCode);
-    alert('Your class code is: ' + state.classCode + '\n\nShare this with your students!');
+    showClassCodeModal();
   }).catch(function(err) {
     alert('Registration failed: ' + err.message);
   });
+}
+
+function showClassCodeModal() {
+  document.getElementById('display-class-code').textContent = state.classCode;
+  document.getElementById('classcode-modal').classList.add('open');
+}
+
+function closeClassCodeModal() {
+  document.getElementById('classcode-modal').classList.remove('open');
+  enterFeed();
+}
+
+function copyClassCode() {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(state.classCode).then(function() {
+      showToast('📋 Code copied: ' + state.classCode);
+    });
+  } else {
+    // Fallback
+    var el = document.createElement('textarea');
+    el.value = state.classCode;
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand('copy');
+    document.body.removeChild(el);
+    showToast('📋 Code copied: ' + state.classCode);
+  }
 }
 
 function saveSession() {
@@ -1084,15 +1135,34 @@ function updateOnline() {
 // SIGN OUT
 // ══════════════════════════════════════════
 function signOut() {
-  if (state.unsubFeed) state.unsubFeed();
+  if (state.unsubFeed) { state.unsubFeed(); state.unsubFeed = null; }
   localStorage.removeItem('cos_code');
   localStorage.removeItem('cos_role');
   localStorage.removeItem('cos_name');
   localStorage.removeItem('cos_uid');
+  localStorage.removeItem('cos_demo');
   if (auth && !demoMode) auth.signOut().catch(function(){});
-  state.classCode = ''; state.role = 'student'; state.posts = [];
+  // Reset state completely
+  state.classCode = '';
+  state.role = 'student';
+  state.posts = [];
+  state.uid = '';
+  state.displayName = '';
+  // Clear code inputs
   document.querySelectorAll('#code-inputs input').forEach(function(b) { b.value = ''; });
-  showScreen('login');
+  // Hide ALL screens first
+  document.querySelectorAll('.screen').forEach(function(s) {
+    s.classList.remove('active');
+    s.style.display = 'none';
+  });
+  // Show login screen only
+  var loginScreen = document.getElementById('screen-login');
+  if (loginScreen) {
+    loginScreen.style.display = 'flex';
+    loginScreen.classList.add('active');
+  }
+  // Scroll to top
+  window.scrollTo(0, 0);
 }
 
 // ══════════════════════════════════════════
