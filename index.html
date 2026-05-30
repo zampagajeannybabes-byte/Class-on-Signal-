@@ -802,14 +802,14 @@
   <div class="feed-list" id="feed-list">
     <!-- Posts rendered by JS -->
   </div>
-
+ 
   <div class="kb-bar">
     <span>💾 <span id="feed-kb">13.5 KB</span> this session</span>
     <span id="offline-mode-label">● Online</span>
   </div>
-
+ 
   <button class="fab" onclick="showScreen('post')" title="New post">＋</button>
-
+ 
   <nav class="bottom-nav">
     <div class="nav-item active" onclick="showScreen('feed')">
       <span class="nav-icon">🏠</span>
@@ -820,13 +820,12 @@
       <span>Post</span>
     </div>
     <div class="nav-item" onclick="showScreen('profile')">
-      <span class="nav-icon">👤</span>
+            <span class="nav-icon">👤</span>
       <span>Profile</span>
     </div>
   </nav>
 </div>
-
-<!-- ═══════════════════════════════════════
+ 
      SCREEN 3: POST
 ════════════════════════════════════════ -->
 <div id="screen-post" class="screen">
@@ -834,30 +833,90 @@
     <button class="back-btn" onclick="showScreen('feed')">←</button>
     <span id="post-screen-title">New Announcement</span>
   </div>
-
+ 
   <div class="post-form">
-    <textarea id="post-text" placeholder="Type your announcement or message here…"></textarea>
-
-    <button class="attach-btn" onclick="document.getElementById('file-input').click()">
-      📎 Attach file (PDF, image, Word, text)
-    </button>
-    <input type="file" id="file-input" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.txt" onchange="handleFileSelect(this)">
-
-    <div class="selected-file" id="selected-file-preview">
-      <span id="selected-file-icon">📄</span>
-      <div>
-        <div id="selected-file-name" style="font-size:13px;font-weight:600;"></div>
-        <div id="selected-file-size" style="font-size:11px;color:var(--text2);margin-top:2px;"></div>
-      </div>
-      <span class="compress-note" id="compress-note"></span>
+ 
+    <!-- Who is posting -->
+    <div id="posting-as-bar" style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:var(--text2);display:flex;align-items:center;gap:8px;">
+      <span id="posting-as-icon">👤</span>
+      <span id="posting-as-text">Posting as: Student</span>
     </div>
-
-    <button class="btn-post" onclick="submitPost()">📤 POST TO CLASS</button>
-
-    <div class="role-note" id="post-role-note">Posting as: Student</div>
+ 
+    <!-- Message textarea -->
+    <textarea id="post-text" placeholder="Type your message or announcement here…"></textarea>
+ 
+    <!-- File attach button -->
+    <!-- Three clear upload options -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+ 
+      <!-- Option 1: Take photo with camera -->
+      <label for="camera-input" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;height:72px;background:var(--bg2);border:1.5px solid var(--border);border-radius:12px;color:var(--text2);font-size:12px;font-weight:600;text-align:center;padding:8px;">
+        <span style="font-size:24px;">📷</span>
+        Take Photo
+      </label>
+      <input type="file" id="camera-input"
+        accept="image/*"
+        capture="environment"
+        style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;"
+        onchange="handleFileSelect(this)">
+ 
+      <!-- Option 2: Choose from gallery -->
+      <label for="gallery-input" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;height:72px;background:var(--bg2);border:1.5px solid var(--border);border-radius:12px;color:var(--text2);font-size:12px;font-weight:600;text-align:center;padding:8px;">
+        <span style="font-size:24px;">🖼️</span>
+        Gallery
+      </label>
+      <input type="file" id="gallery-input"
+        accept="image/*"
+        style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;"
+        onchange="handleFileSelect(this)">
+ 
+    </div>
+ 
+    <!-- Option 3: Any file -->
+    <label for="file-input" class="attach-btn" id="attach-btn-main" style="display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;margin-bottom:12px;">
+      📎 Attach any file — PDF, Word, text
+    </label>
+    <input type="file" id="file-input"
+      accept=".pdf,.doc,.docx,.txt,application/pdf,application/msword,text/plain"
+      style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;"
+      onchange="handleFileSelect(this)">
+ 
+    <!-- Selected file preview -->
+    <div class="selected-file" id="selected-file-preview">
+      <span id="selected-file-icon" style="font-size:24px;">📄</span>
+      <div style="flex:1;min-width:0;">
+        <div id="selected-file-name" style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+        <div id="selected-file-size" style="font-size:11px;color:var(--text2);margin-top:2px;"></div>
+        <div id="selected-file-status" style="font-size:11px;margin-top:3px;"></div>
+      </div>
+      <button onclick="removeFile()" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--red);padding:4px 8px;font-size:12px;cursor:pointer;flex-shrink:0;">✕ Remove</button>
+      </div>
+ 
+    <!-- Compression progress -->
+    <div id="compress-progress" style="display:none;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:12px;">
+      <div style="font-size:12px;font-weight:600;color:var(--gold);margin-bottom:8px;">⚡ Compressing image to save data…</div>
+      <div style="background:var(--border);border-radius:4px;height:6px;overflow:hidden;">
+        <div id="compress-bar" style="background:var(--accent);height:100%;width:0%;transition:width 0.3s;border-radius:4px;"></div>
+      </div>
+    </div>
+ 
+    <!-- Image preview (for images only) -->
+    <div id="image-preview-wrap" style="display:none;margin-bottom:12px;border-radius:12px;overflow:hidden;border:1px solid var(--border);">
+      <img id="image-preview-img" style="width:100%;max-height:200px;object-fit:cover;display:block;" src="" alt="Preview">
+      <div id="image-preview-info" style="background:var(--bg3);padding:8px 12px;font-size:11px;color:var(--green);font-weight:600;"></div>
+    </div>
+ 
+    <!-- Post button -->
+    <button class="btn-post" id="btn-post-main" onclick="submitPost()">📤 POST TO CLASS</button>
+ 
+    <!-- Data usage estimate -->
+    <div id="data-estimate" style="text-align:center;font-size:11px;color:var(--text2);margin-top:8px;display:none;">
+      📊 Estimated data use: <strong id="data-estimate-val">—</strong>
+    </div>
+ 
   </div>
-</div>
-
+  </div>
+ 
 <!-- ═══════════════════════════════════════
      SCREEN 4: PROFILE
 ════════════════════════════════════════ -->
@@ -866,14 +925,14 @@
     <button class="back-btn" onclick="showScreen('feed')">←</button>
     Profile
   </div>
-
+ 
   <div style="padding:16px;overflow-y:auto;padding-bottom:40px;">
     <div class="profile-card">
       <div class="profile-avatar" id="profile-avatar" style="background:#1e3a8a;">S</div>
       <div class="profile-name" id="profile-name">Student</div>
       <div class="profile-role" id="profile-role-label">Class code: 452981</div>
     </div>
-
+ 
     <div class="stats-row">
       <div class="stat-card">
         <div class="stat-num" id="stat-posts">3</div>
@@ -899,7 +958,7 @@
       </div>
       <span id="text-toggle-status-icon">○</span>
     </div>
-
+ 
     <div class="settings-item">
       <div class="settings-item-left">
         <span class="settings-item-icon">📵</span>
@@ -907,10 +966,10 @@
           <div>Offline cache</div>
           <div class="settings-item-sub">Last synced: just now</div>
         </div>
-      </div>
-      <span style="color:var(--green);font-size:12px;font-weight:700;">READY</span>
+          </div>
+          <span style="color:var(--green);font-size:12px;font-weight:700;">READY</span>
     </div>
-
+ 
     <div class="settings-item">
       <div class="settings-item-left">
         <span class="settings-item-icon">📶</span>
@@ -920,13 +979,25 @@
         </div>
       </div>
     </div>
-
+ 
     <button class="btn-signout" onclick="signOut()">Sign Out</button>
   </div>
 </div>
-
+ 
+ 
+<!-- FILE VIEWER MODAL -->
+  <div id="file-viewer-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:200;justify-content:center;align-items:flex-end;">
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:24px 24px 0 0;width:100%;max-width:480px;max-height:80vh;overflow-y:auto;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);">
+      <span id="file-viewer-title" style="font-size:15px;font-weight:700;"></span>
+      <button onclick="closeFileViewer()" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:6px 12px;font-size:13px;font-weight:700;cursor:pointer;">✕ Close</button>
+    </div>
+    <div id="file-viewer-body"></div>
+  </div>
+</div>
+ 
 <script>
-// ═══════════════════════════════════════
+  // ═══════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════
 const state = {
@@ -970,7 +1041,7 @@ const state = {
     }
   ]
 };
-
+ 
 // ═══════════════════════════════════════
 // CODE INPUT LOGIC
 // ═══════════════════════════════════════
@@ -984,13 +1055,13 @@ codeBoxes.forEach((box, i) => {
     if (e.key === 'Backspace' && !box.value && i > 0) codeBoxes[i - 1].focus();
   });
 });
-
+ 
 function getCode() {
   return Array.from(codeBoxes).map(b => b.value).join('');
 }
-
+ 
 // ═══════════════════════════════════════
-// LOGIN
+  // LOGIN
 // ═══════════════════════════════════════
 function handleLogin() {
   const code = getCode();
@@ -1002,15 +1073,15 @@ function handleLogin() {
   state.role = 'student';
   enterFeed();
 }
-
+ 
 function openTeacherModal() {
   document.getElementById('teacher-modal').classList.add('open');
 }
-
+ 
 function closeTeacherModal() {
   document.getElementById('teacher-modal').classList.remove('open');
 }
-
+ 
 function handleTeacherLogin() {
   const email = document.getElementById('teacher-email').value;
   if (!email || !email.includes('@')) { alert('Enter a valid email.'); return; }
@@ -1019,22 +1090,33 @@ function handleTeacherLogin() {
   closeTeacherModal();
   enterFeed();
 }
-
+ 
 function enterFeed() {
   document.getElementById('header-code').textContent = state.classCode;
-  document.getElementById('post-role-note').textContent = 'Posting as: ' + (state.role === 'teacher' ? 'Teacher' : 'Student');
+ 
+  // Update posting-as bar
+  var paText = document.getElementById('posting-as-text');
+  var paIcon = document.getElementById('posting-as-icon');
+  if (paText) paText.textContent = 'Posting as: ' + (state.role === 'teacher' ? 'Teacher' : 'Student');
+  if (paIcon) paIcon.textContent = state.role === 'teacher' ? '👩‍🏫' : '👤';
+
+  // Update post screen title
+  var pst = document.getElementById('post-screen-title');
+  if (pst) pst.textContent = state.role === 'teacher' ? 'New Announcement' : 'Submit Work';
+ 
   if (state.role === 'teacher') {
-    document.getElementById('post-screen-title').textContent = 'New Announcement';
-    document.getElementById('profile-avatar').textContent = 'T';
-    document.getElementById('profile-avatar').style.background = '#1e3a8a';
-    document.getElementById('profile-name').textContent = 'Teacher';
-    document.getElementById('profile-role-label').textContent = 'Class code: ' + state.classCode;
+    var pa = document.getElementById('profile-avatar');
+    if (pa) { pa.textContent = 'T'; pa.style.background = '#1e3a8a'; }
+    var pn = document.getElementById('profile-name');
+    if (pn) pn.textContent = 'Teacher';
+    var pr = document.getElementById('profile-role-label');
+    if (pr) pr.textContent = 'Class code: ' + state.classCode;
   }
   renderFeed();
   showScreen('feed');
 }
 
-// ═══════════════════════════════════════
+  // ═══════════════════════════════════════
 // SCREEN NAVIGATION
 // ═══════════════════════════════════════
 function showScreen(name) {
@@ -1046,7 +1128,7 @@ function showScreen(name) {
   });
   if (name === 'feed') renderFeed();
 }
-
+ 
 // ═══════════════════════════════════════
 // TEXT ONLY MODE
 // ═══════════════════════════════════════
@@ -1060,7 +1142,7 @@ function toggleTextOnly() {
   if (status) status.textContent = state.textOnly ? 'On — media hidden (saves data)' : 'Off — media visible';
   if (icon) icon.textContent = state.textOnly ? '●' : '○';
 }
-
+ 
 // ═══════════════════════════════════════
 // FILE ICON
 // ═══════════════════════════════════════
@@ -1070,156 +1152,390 @@ function fileIconEmoji(type) {
   if (type === 'txt') return '📝';
   return '📄';
 }
-
+ 
 function fileIconClass(type) {
   if (type === 'pdf') return 'pdf';
   if (type === 'img') return 'img';
   if (type === 'txt') return 'txt';
   return 'doc';
 }
-
+ 
 // ═══════════════════════════════════════
 // RENDER FEED
 // ═══════════════════════════════════════
 function renderFeed() {
   const list = document.getElementById('feed-list');
   if (!list) return;
-
+ 
   if (state.posts.length === 0) {
-    list.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-icon">📭</div>
-        <h3>No announcements yet</h3>
-        <p>Your teacher hasn't posted anything yet.<br>Check back soon or make sure you have the right class code.</p>
-      </div>`;
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><h3>No announcements yet</h3><p>Your teacher has not posted anything yet.</p></div>';
     return;
   }
 
-  list.innerHTML = state.posts.map(post => `
-    <div class="post-card" id="post-${post.id}">
-      <div class="post-header">
-        <div class="avatar ${post.role}">${post.role === 'teacher' ? 'T' : 'S'}</div>
-        <div class="post-meta">
-          <div class="post-author">
-            ${post.author}
-            ${post.role === 'teacher' ? '<span class="badge teacher">Teacher</span>' : ''}
-            ${post.queued ? '<span class="queued-badge">⏳ Queued</span>' : ''}
-          </div>
-          <div class="post-time">${post.time}</div>
-        </div>
-      </div>
-
-      ${post.text ? `<div class="post-body">${post.text}</div>` : '<div class="post-body empty">(file attachment)</div>'}
-
-      ${post.file ? `
-        <div class="file-card">
-          <div class="file-icon ${fileIconClass(post.file.type)}">${fileIconEmoji(post.file.type)}</div>
-          <div class="file-info">
-            <div class="file-name">${post.file.name}</div>
-            <div class="file-size">${post.file.size}</div>
-          </div>
-          <button class="btn-view">Tap to view</button>
-        </div>` : ''}
-
-      <div class="post-footer">
-        ${post.seen > 0 ? `<div class="seen-count">👁 Seen by ${post.seen} student${post.seen !== 1 ? 's' : ''}</div>` : '<div></div>'}
-
-        ${state.role === 'teacher' && post.role === 'student' ? `
-          <button class="btn-reviewed ${post.reviewed ? 'done' : ''}"
-            onclick="markReviewed(${post.id})"
-            ${post.reviewed ? 'disabled' : ''}>
-            ✅ ${post.reviewed ? 'Reviewed' : 'Mark Reviewed'}
-          </button>` : ''}
-      </div>
-    </div>
-  `).join('');
+  let html = '';
+  state.posts.forEach(function(post) {
+    let fileHTML = '';
+    if (post.file) {
+      fileHTML = '<div class="file-card">' +
+        '<div class="file-icon ' + fileIconClass(post.file.type) + '">' + fileIconEmoji(post.file.type) + '</div>' +
+        '<div class="file-info"><div class="file-name">' + post.file.name + '</div><div class="file-size">' + post.file.size + '</div></div>' +
+        '<button class="btn-view" onclick="viewFile(' + post.id + ')">Tap to view</button>' +
+        '</div>';
+    }
+ 
+    let seenHTML = post.seen > 0
+      ? '<div class="seen-count">👁 Seen by ' + post.seen + ' student' + (post.seen !== 1 ? 's' : '') + '</div>'
+      : '<div></div>';
+ 
+    let actionBtn = '';
+    if (state.role === 'teacher' && post.role === 'student') {
+      if (post.reviewed) {
+        actionBtn = '<button class="btn-reviewed done" onclick="markReviewed(' + post.id + ')">✅ Reviewed</button>';
+      } else {
+        actionBtn = '<button class="btn-reviewed" onclick="markReviewed(' + post.id + ')">✅ Mark Reviewed</button>';
+      }
+    }
+    if (state.role === 'student' && post.role === 'teacher') {
+      if (post.seenByMe) {
+        actionBtn = '<button style="background:var(--bg3);color:var(--green);border:1px solid var(--green);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;">👁 Seen</button>';
+      } else {
+        actionBtn = '<button style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;" onclick="markSeen(' + post.id + ')">👁 Mark Seen</button>';
+       }
+    }
+ 
+    let textHTML = post.text
+      ? '<div class="post-body">' + post.text + '</div>'
+      : '<div class="post-body empty"><em>(file attachment)</em></div>';
+ 
+    let teacherBadge = post.role === 'teacher' ? '<span class="badge teacher">Teacher</span>' : '';
+    let queuedBadge = post.queued ? '<span class="queued-badge">⏳ Queued</span>' : '';
+ 
+    html += '<div class="post-card" id="post-' + post.id + '">' +
+      '<div class="post-header">' +
+        '<div class="avatar ' + post.role + '">' + (post.role === 'teacher' ? 'T' : 'S') + '</div>' +
+        '<div class="post-meta">' +
+          '<div class="post-author">' + post.author + ' ' + teacherBadge + ' ' + queuedBadge + '</div>' +
+      '<div class="post-time">' + post.time + '</div>' +
+        '</div>' +
+      '</div>' +
+      textHTML +
+      fileHTML +
+      '<div class="post-footer">' + seenHTML + actionBtn + '</div>' +
+    '</div>';
+  });
+ 
+  list.innerHTML = html;
 }
-
+ 
 // ═══════════════════════════════════════
-// MARK REVIEWED
+// MARK REVIEWED (Teacher)
 // ═══════════════════════════════════════
 function markReviewed(id) {
-  const post = state.posts.find(p => p.id === id);
+  var post = state.posts.find(function(p) { return p.id === id; });
   if (post) {
-    post.reviewed = true;
+    post.reviewed = !post.reviewed;
+    renderFeed();
+  }
+  }
+
+  // ═══════════════════════════════════════
+// MARK SEEN (Student)
+// ═══════════════════════════════════════
+function markSeen(id) {
+  var post = state.posts.find(function(p) { return p.id === id; });
+  if (post && !post.seenByMe) {
+    post.seenByMe = true;
+    post.seen = (post.seen || 0) + 1;
     renderFeed();
   }
 }
-
+ 
 // ═══════════════════════════════════════
+// VIEW FILE
+// ═══════════════════════════════════════
+function viewFile(id) {
+  var post = state.posts.find(function(p) { return p.id === id; });
+  if (!post || !post.file) return;
+  var overlay = document.getElementById('file-viewer-overlay');
+  var body = document.getElementById('file-viewer-body');
+  document.getElementById('file-viewer-title').textContent = post.file.name;
+ 
+  var html = '';
+  if (post.file.type === 'img' && post.file.dataURL) {
+    // Show the actual compressed image
+    html = '<div style="padding:0;">' +
+      '<img src="' + post.file.dataURL + '" style="width:100%;max-height:60vh;object-fit:contain;display:block;background:#000;" alt="' + post.file.name + '">' +
+      '<div style="padding:12px 16px;background:var(--bg3);display:flex;justify-content:space-between;align-items:center;">' +
+      '<span style="font-size:12px;color:var(--text2);">' + post.file.name + '</span>' +
+      '<span style="font-size:12px;color:var(--green);font-weight:700;">' + post.file.size + '</span>' +
+      '</div></div>';
+  } else if (post.file.type === 'txt' && post.file.dataURL) {
+    // Decode and show text content
+    try {
+      var b64 = post.file.dataURL.split(',')[1];
+      var text = atob(b64);
+      html = '<div style="padding:16px;">' +
+        '<div style="background:var(--bg3);border-radius:10px;padding:16px;font-family:monospace;font-size:13px;line-height:1.7;white-space:pre-wrap;max-height:50vh;overflow-y:auto;">' +
+        text.replace(/</g,'&lt;').replace(/>/g,'&gt;') +
+        '</div></div>';
+    } catch(e) {
+      html = '<div style="text-align:center;padding:32px;">📝 Text file attached</div>';
+    }
+  } else {
+    var icons = { pdf: '📕', img: '🖼️', txt: '📝', doc: '📄' };
+    var icon = icons[post.file.type] || '📄';
+    html = '<div style="text-align:center;padding:32px 16px;">' +
+      '<div style="font-size:56px;margin-bottom:12px;">' + icon + '</div>' +
+      '<div style="font-size:16px;font-weight:700;margin-bottom:6px;">' + post.file.name + '</div>' +
+      '<div style="font-size:13px;color:var(--text2);margin-bottom:20px;">Size: ' + post.file.size + '</div>' +
+      '<div style="font-size:13px;color:var(--text2);background:var(--bg3);border-radius:10px;padding:14px;line-height:1.7;">' +
+      '📌 File attached successfully.<br><br>⚡ Connect Firebase backend to enable full file viewing and storage for all students.' +
+      '</div></div>';
+  }
+  body.innerHTML = html;
+  overlay.style.display = 'flex';
+}
+ 
+function closeFileViewer() {
+  document.getElementById('file-viewer-overlay').style.display = 'none';
+  }
+
+
+  // ═══════════════════════════════════════
 // FILE SELECT & COMPRESSION NOTE
 // ═══════════════════════════════════════
-let selectedFile = null;
-
-function handleFileSelect(input) {
-  if (!input.files || !input.files[0]) return;
-  const file = input.files[0];
-  selectedFile = file;
-
-  const preview = document.getElementById('selected-file-preview');
-  const nameEl = document.getElementById('selected-file-name');
-  const sizeEl = document.getElementById('selected-file-size');
-  const iconEl = document.getElementById('selected-file-icon');
-  const noteEl = document.getElementById('compress-note');
-
-  const ext = file.name.split('.').pop().toLowerCase();
-  const isImage = ['jpg','jpeg','png','gif','webp'].includes(ext);
-
-  nameEl.textContent = file.name;
-  sizeEl.textContent = formatBytes(file.size);
-  iconEl.textContent = isImage ? '🖼️' : ext === 'pdf' ? '📕' : '📄';
-  noteEl.textContent = isImage ? '⚡ Will compress before upload' : '';
-
-  preview.classList.add('show');
-}
-
+// ═══════════════════════════════════════
+// FILE UPLOAD & COMPRESSION SYSTEM
+// ═══════════════════════════════════════
+var selectedFile = null;
+var compressedDataURL = null;
+var compressedSize = 0;
+ 
 function formatBytes(bytes) {
   if (bytes < 1024) return bytes + ' B';
   if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(0) + ' KB';
   return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
 }
+ 
+function getFileType(name) {
+  var ext = name.split('.').pop().toLowerCase();
+  if (['jpg','jpeg','png','gif','webp'].includes(ext)) return 'img';
+  if (ext === 'pdf') return 'pdf';
+  if (ext === 'txt') return 'txt';
+  return 'doc';
+}
+ 
+function getFileIcon(type) {
+  if (type === 'img') return '🖼️';
+  if (type === 'pdf') return '📕';
+  if (type === 'txt') return '📝';
+  return '📄';
+}
+ 
+function handleFileSelect(input) {
+  if (!input.files || !input.files[0]) {
+    // Try reading from the input directly
+    return;
+  }
+  var file = input.files[0];
+ 
+  // 50MB max
+  if (file.size > 50 * 1024 * 1024) {
+    alert('File is too large. Maximum size is 50MB.');
+    input.value = '';
+    return;
+  }
 
+  selectedFile = file;
+  compressedDataURL = null;
+  compressedSize = 0;
+ 
+  var type = getFileType(file.name);
+  var isImage = type === 'img';
+ 
+  // Update UI
+  document.getElementById('selected-file-icon').textContent = getFileIcon(type);
+  document.getElementById('selected-file-name').textContent = file.name;
+  document.getElementById('selected-file-size').textContent = formatBytes(file.size);
+  document.getElementById('selected-file-status').textContent = isImage ? '⚡ Compressing...' : '✅ Ready to attach';
+  document.getElementById('selected-file-status').style.color = isImage ? 'var(--gold)' : 'var(--green)';
+  document.getElementById('selected-file-preview').classList.add('show');
+  document.getElementById('image-preview-wrap').style.display = 'none';
+  document.getElementById('data-estimate').style.display = 'block';
+  document.getElementById('data-estimate-val').textContent = formatBytes(file.size);
+ 
+  if (isImage) {
+    compressImage(file);
+  } else {
+    // Read non-image as base64 for storage
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      compressedDataURL = e.target.result;
+      compressedSize = file.size;
+      document.getElementById('selected-file-status').textContent = '✅ Ready to attach';
+      document.getElementById('selected-file-status').style.color = 'var(--green)';
+    };
+    reader.readAsDataURL(file);
+  }
+  }
+
+  function compressImage(file) {
+  document.getElementById('compress-progress').style.display = 'block';
+  animateBar(0, 40, 300);
+ 
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    animateBar(40, 70, 200);
+    var img = new Image();
+    img.onload = function() {
+      animateBar(70, 90, 200);
+ 
+      // Compress: max 1200px wide, 70% quality
+      var canvas = document.createElement('canvas');
+      var maxW = 1200;
+      var scale = img.width > maxW ? maxW / img.width : 1;
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+ 
+      var ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      var dataURL = canvas.toDataURL('image/jpeg', 0.70);
+      var byteLen = Math.round((dataURL.length * 3) / 4);
+ 
+      compressedDataURL = dataURL;
+      compressedSize = byteLen;
+ 
+      animateBar(90, 100, 150);
+ 
+      setTimeout(function() {
+        document.getElementById('compress-progress').style.display = 'none';
+ 
+        var saved = file.size - byteLen;
+        var pct = Math.round((saved / file.size) * 100);
+ 
+        document.getElementById('selected-file-size').textContent =
+          formatBytes(file.size) + ' → ' + formatBytes(byteLen);
+        document.getElementById('selected-file-status').textContent =
+          '✅ Compressed! Saved ' + pct + '% (' + formatBytes(saved) + ')';
+        document.getElementById('selected-file-status').style.color = 'var(--green)';
+        document.getElementById('data-estimate-val').textContent = formatBytes(byteLen);
+ 
+        // Show image preview
+        document.getElementById('image-preview-img').src = dataURL;
+        document.getElementById('image-preview-info').textContent =
+          '📐 ' + canvas.width + '×' + canvas.height + 'px · ' + formatBytes(byteLen) + ' · JPEG 70%';
+        document.getElementById('image-preview-wrap').style.display = 'block';
+      }, 200);
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+ 
+function animateBar(from, to, duration) {
+  var bar = document.getElementById('compress-bar');
+  if (!bar) return;
+  var start = null;
+  function step(ts) {
+    if (!start) start = ts;
+    var p = Math.min((ts - start) / duration, 1);
+    bar.style.width = (from + (to - from) * p) + '%';
+    if (p < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+ 
+function removeFile() {
+  selectedFile = null;
+  compressedDataURL = null;
+  compressedSize = 0;
+  try { document.getElementById('file-input').value = ''; } catch(e) {}
+  try { document.getElementById('camera-input').value = ''; } catch(e) {}
+  try { document.getElementById('gallery-input').value = ''; } catch(e) {}
+  document.getElementById('selected-file-preview').classList.remove('show');
+  document.getElementById('image-preview-wrap').style.display = 'none';
+  document.getElementById('compress-progress').style.display = 'none';
+  document.getElementById('data-estimate').style.display = 'none';
+}
+ 
 // ═══════════════════════════════════════
 // SUBMIT POST
 // ═══════════════════════════════════════
 function submitPost() {
-  const text = document.getElementById('post-text').value.trim();
+  var text = document.getElementById('post-text').value.trim();
   if (!text && !selectedFile) {
     alert('Please write a message or attach a file before posting.');
     return;
   }
+ 
+  // Check if still compressing
+  if (selectedFile && getFileType(selectedFile.name) === 'img' && !compressedDataURL) {
+    alert('Please wait — image is still compressing.');
+    return;
+  }
+ 
+  var btn = document.getElementById('btn-post-main');
+  btn.textContent = '⏳ Posting…';
+  btn.disabled = true;
+ 
+  setTimeout(function() {
+    var fileData = null;
+    if (selectedFile) {
+      fileData = {
+        name: selectedFile.name,
+        size: compressedSize > 0 ? formatBytes(compressedSize) : formatBytes(selectedFile.size),
+        type: getFileType(selectedFile.name),
+        dataURL: compressedDataURL || null
+      };
+    }
+ 
+    var newPost = {
+      id: Date.now(),
+      role: state.role,
+      author: state.role === 'teacher' ? 'Teacher' : 'Student',
+      time: 'just now',
+      text: text,
+      file: fileData,
+      seen: 0,
+      seenByMe: false,
+      reviewed: false,
+      queued: !state.online
+    };
+ 
+    state.posts.unshift(newPost);
+ 
+    // Reset form
+    document.getElementById('post-text').value = '';
+    removeFile();
+    btn.textContent = '📤 POST TO CLASS';
+    btn.disabled = false;
+ 
+    var subCount = document.getElementById('stat-submissions');
+    if (subCount) subCount.textContent = parseInt(subCount.textContent || '0') + 1;
 
-  const newPost = {
-    id: Date.now(),
-    role: state.role,
-    author: state.role === 'teacher' ? 'Teacher' : 'Student',
-    time: 'just now',
-    text: text,
-    file: selectedFile ? {
-      name: selectedFile.name,
-      size: formatBytes(selectedFile.size),
-      type: ['jpg','jpeg','png','gif','webp'].includes(selectedFile.name.split('.').pop().toLowerCase()) ? 'img' :
-            selectedFile.name.endsWith('.pdf') ? 'pdf' :
-            selectedFile.name.endsWith('.txt') ? 'txt' : 'doc'
-    } : null,
-    seen: 0,
-    reviewed: false,
-    queued: !state.online
-  };
-
-  state.posts.unshift(newPost);
-
-  document.getElementById('post-text').value = '';
-  selectedFile = null;
-  document.getElementById('selected-file-preview').classList.remove('show');
-  document.getElementById('file-input').value = '';
-
-  const subCount = document.getElementById('stat-submissions');
-  if (subCount) subCount.textContent = parseInt(subCount.textContent || 0) + 1;
-
-  showScreen('feed');
+             showScreen('feed');
+ 
+    // Show success toast
+    showToast(newPost.queued ? '⏳ Queued — will send when signal returns' : '✅ Posted successfully!');
+  }, 600);
 }
-
+ 
+// ═══════════════════════════════════════
+// TOAST NOTIFICATION
+// ═══════════════════════════════════════
+function showToast(msg) {
+  var toast = document.getElementById('toast');
+  if (!toast) return;
+  toast.textContent = msg;
+  toast.style.opacity = '1';
+  toast.style.transform = 'translateY(0)';
+  setTimeout(function() {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateY(20px)';
+  }, 2500);
+  }
+ 
 // ═══════════════════════════════════════
 // SIGN OUT
 // ═══════════════════════════════════════
@@ -1230,7 +1546,7 @@ function signOut() {
   showScreen('login');
   document.getElementById('screen-login').style.display = 'flex';
 }
-
+ 
 // ═══════════════════════════════════════
 // ONLINE / OFFLINE DETECTION
 // ═══════════════════════════════════════
@@ -1239,23 +1555,23 @@ function updateOnlineStatus() {
   const banner = document.getElementById('offline-banner');
   const label = document.getElementById('offline-mode-label');
   const netLabel = document.getElementById('network-status-label');
-
+ 
   if (banner) banner.classList.toggle('show', !state.online);
   if (label) label.textContent = state.online ? '● Online' : '○ Offline';
   if (netLabel) netLabel.textContent = state.online ? '4G LTE' : 'No connection';
-
+ 
   if (state.online) {
     // Auto-sync queued posts
     state.posts.forEach(p => { if (p.queued) { p.queued = false; } });
     renderFeed();
   }
 }
-
+ 
 window.addEventListener('online', updateOnlineStatus);
 window.addEventListener('offline', updateOnlineStatus);
 updateOnlineStatus();
 
-// ═══════════════════════════════════════
+  // ═══════════════════════════════════════
 // SERVICE WORKER REGISTRATION
 // ═══════════════════════════════════════
 if ('serviceWorker' in navigator) {
@@ -1266,5 +1582,8 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
+  
+<!-- TOAST NOTIFICATION -->
+<div id="toast" style="position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:10px 20px;font-size:13px;font-weight:600;color:var(--text);opacity:0;transition:opacity 0.3s,transform 0.3s;z-index:300;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,0.4);pointer-events:none;"></div>
+ 
 </body>
-</html>
