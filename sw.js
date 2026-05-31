@@ -5,7 +5,6 @@ const ASSETS = [
   '/manifest.json'
 ];
 
-// Install — cache core files
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
@@ -13,7 +12,6 @@ self.addEventListener('install', event => {
   self.skipWaiting();
 });
 
-// Activate — remove old caches
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys =>
@@ -25,18 +23,18 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
-// Fetch — network first, fall back to cache
 self.addEventListener('fetch', event => {
   event.respondWith(
-    fetch(event.request).then(response => {
-      if (response && response.status === 200) {
-        const copy = response.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
-      }
-      return response;
-    }).catch(() => {
-      return caches.match(event.request).then(cached => {
-        return cached || caches.match('/index.html');
+    caches.match(event.request).then(cached => {
+      if (cached) return cached;
+      return fetch(event.request).then(response => {
+        if (response && response.status === 200) {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
+        }
+        return response;
+      }).catch(() => {
+        return caches.match('/index.html');
       });
     })
   );
