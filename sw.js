@@ -1,4 +1,4 @@
-const CACHE_NAME = 'class-on-signal-v1';
+const CACHE_NAME = 'class-on-signal-v3';
 const ASSETS = [
   '/',
   '/index.html',
@@ -25,22 +25,19 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
-// Fetch — serve from cache first, fall back to network
+// Fetch — network first, fall back to cache
 self.addEventListener('fetch', event => {
   event.respondWith(
-    caches.match(event.request).then(cached => {
-      if (cached) return cached;
-      return fetch(event.request).then(response => {
-        // Cache new successful responses
-        if (response && response.status === 200) {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
-        }
-        return response;
-      }).catch(() => {
-        // Offline fallback — return cached index.html
-        return caches.match('/index.html');
+    fetch(event.request).then(response => {
+      if (response && response.status === 200) {
+        const copy = response.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
+      }
+      return response;
+    }).catch(() => {
+      return caches.match(event.request).then(cached => {
+        return cached || caches.match('/index.html');
       });
     })
   );
-});
+})
