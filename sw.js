@@ -1,4 +1,4 @@
-const CACHE_NAME = 'class-on-signal-v3';
+const CACHE_NAME = 'class-on-signal-v1';
 const ASSETS = [
   '/',
   '/index.html',
